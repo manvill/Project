@@ -4,6 +4,7 @@ from config.config import Config
 from cache.token_cache import TokenCache
 from fetcher.fetcher import DexscreenerFetcher
 from utils.time_utils import time_ago
+from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="🚀 Newly Launched Tokens Dashboard", layout="wide")
 
@@ -20,6 +21,9 @@ REFRESH_INTERVALS = {
 refresh_choice = st.sidebar.selectbox("Refresh dashboard every:", list(REFRESH_INTERVALS.keys()), index=0)
 selected_interval = REFRESH_INTERVALS[refresh_choice]
 
+# Auto refresh setup (in milliseconds)
+st_autorefresh(interval=selected_interval * 1000, key="data_refresh")
+
 # ---- UI Header ----
 st.title("🚀 Newly Launched Tokens Dashboard")
 st.caption(f"Data from Dexscreener. Auto-refresh dashboard every **{refresh_choice}**")
@@ -34,13 +38,14 @@ if time.time() - cache.last_refresh_time >= selected_interval:
     cache.last_refresh_time = time.time()
 
 all_tokens = cache.get_tokens()
-chain_filter = st.sidebar.selectbox("Filter by chain", ["All"] + sorted({t['chainId'] for t in all_tokens}))
+chain_options = sorted({t['chainId'] for t in all_tokens})
+selected_chains = st.sidebar.multiselect("Filter by chain(s)", chain_options, default=chain_options)
 time_filter = st.sidebar.selectbox("Show tokens launched in last...", ["All", "5m", "15m", "30m", "1h", "6h", "1D", "7D"])
 search_term = st.sidebar.text_input("Search by symbol or keyword")
 
 filtered_tokens = all_tokens
-if chain_filter != "All":
-    filtered_tokens = [t for t in filtered_tokens if t['chainId'] == chain_filter]
+if selected_chains:
+    filtered_tokens = [t for t in filtered_tokens if t['chainId'] in selected_chains]
 
 if time_filter != "All":
     now = time.time()
