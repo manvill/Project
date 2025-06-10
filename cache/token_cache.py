@@ -21,8 +21,11 @@ class TokenCache:
     def update_tokens(self, new_tokens):
         with sqlite3.connect(self.db_path) as conn:
             for token in new_tokens:
+                # Check if token already exists → keep old fetched_at
+                row = conn.execute("SELECT fetched_at FROM tokens WHERE tokenAddress = ?", (token["tokenAddress"],)).fetchone()
+                fetched_at = row[0] if row else token["fetched_at"]
                 conn.execute("REPLACE INTO tokens (tokenAddress, data, fetched_at) VALUES (?, ?, ?)",
-                             (token["tokenAddress"], json.dumps(token), token["fetched_at"]))
+                             (token["tokenAddress"], json.dumps(token), fetched_at))
 
     def get_tokens(self):
         cutoff = time.time() - self.max_duration

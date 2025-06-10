@@ -12,8 +12,9 @@ class DexscreenerFetcher:
                 data = r.json()
                 tokens = []
                 if isinstance(data, list):
+                    now = time.time()
                     for token in data:
-                        token["fetched_at"] = time.time()
+                        token["fetched_at"] = now
                         tokens.append(token)
                 return tokens
             else:
